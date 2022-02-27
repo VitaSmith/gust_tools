@@ -70,8 +70,14 @@ typedef struct {
 #define MAX_PAK_ENTRY_SIZE  sizeof(pak_entry64_a22)
 #define CURRENT_ENTRY_SIZE  (is_pak64 ? (is_a22 ? sizeof(pak_entry64_a22) : sizeof(pak_entry64)) : sizeof(pak_entry32))
 
-static __inline void decode(uint8_t* a, uint8_t* k, uint32_t size, uint32_t key_size)
+static __inline void decode(uint8_t* a, uint8_t* ok, uint32_t size, uint32_t key_size, char* gameKey)
 {
+    uint8_t k[MAX_KEY_SIZE];
+    memcpy(k, ok, key_size);
+    if (gameKey) {
+        for (uint32_t i = 0; i < key_size; i++)
+            k[i] ^= gameKey[i % 0x21];
+    }
     for (uint32_t i = 0; i < size; i++)
         a[i] ^= k[i % key_size];
 }
@@ -116,11 +122,25 @@ int main_utf8(int argc, char** argv)
     void* entries = NULL;
     JSON_Value* json = NULL;
     bool is_pak64 = false, is_a22 = false;
-    bool list_only = (argc == 3) && (argv[1][0] == '-') && (argv[1][1] == 'l');
+    bool list_only = false;
+    char* gameKey = NULL;
+    bool argValid = argc >= 2;
+    for (int i = 1; i < argc - 1; i++) {
+        char* cur = argv[i];
+        if (!strcmp(cur, "-l")) {
+            list_only = true;
+        }
+        else if (!strcmp(cur, "-k") && i + 2 < argc) {
+            gameKey = argv[++i];
+        }
+        else {
+            argValid = false;
+        }
+    }
 
-    if ((argc != 2) && !list_only) {
+    if (!argValid) {
         printf("%s %s (c) 2018-2021 Yuri Hime & VitaSmith\n\n"
-            "Usage: %s [-l] <Gust PAK file>\n\n"
+            "Usage: %s [-l] [-k GameKey] <Gust PAK file>\n\n"
             "Extracts (.pak) or recreates (.json) a Gust .pak archive.\n\n",
             _appname(argv[0]), GUST_TOOLS_VERSION_STR, _appname(argv[0]));
         return 0;
@@ -211,8 +231,8 @@ int main_utf8(int argc, char** argv)
             printf("%09" PRIx64 " %08x %s%c\n", entry(i, data_offset) + file_data_offset,
                 entry(i, size), entry(i, filename), skip_encode ? '*' : ' ');
             if (!skip_encode) {
-                decode((uint8_t*)entry(i, filename), entry(i, key), FILENAME_SIZE, CURRENT_KEY_SIZE);
-                decode(buf, entry(i, key), entry(i, size), CURRENT_KEY_SIZE);
+                decode((uint8_t*)entry(i, filename), entry(i, key), FILENAME_SIZE, CURRENT_KEY_SIZE, gameKey);
+                decode(buf, entry(i, key), entry(i, size), CURRENT_KEY_SIZE, gameKey);
             }
             if (fwrite(buf, 1, entry(i, size), file) != entry(i, size)) {
                 fprintf(stderr, "ERROR: Can't write data for '%s'\n", path);
@@ -299,7 +319,7 @@ int main_utf8(int argc, char** argv)
             for (j = 0; (j < 20) && (entry(i, key)[j] == 0); j++);
             bool skip_decode = (j >= 20);
             if (!skip_decode)
-                decode((uint8_t*)entry(i, filename), entry(i, key), FILENAME_SIZE, CURRENT_KEY_SIZE);
+                decode((uint8_t*)entry(i, filename), entry(i, key), FILENAME_SIZE, CURRENT_KEY_SIZE, gameKey);
             for (size_t n = 0; n < strlen(entry(i, filename)); n++) {
                 if (entry(i, filename)[n] == '\\')
                     entry(i, filename)[n] = PATH_SEP;
@@ -335,7 +355,7 @@ int main_utf8(int argc, char** argv)
                 goto out;
             }
             if (!skip_decode)
-                decode(buf, entry(i, key), entry(i, size), CURRENT_KEY_SIZE);
+                decode(buf, entry(i, key), entry(i, size), CURRENT_KEY_SIZE, gameKey);
             if (!write_file(buf, entry(i, size), path, false))
                 goto out;
             free(buf);
