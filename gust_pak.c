@@ -1,6 +1,6 @@
 /*
   gust_pak - PAK archive unpacker for Gust (Koei/Tecmo) PC games
-  Copyright © 2019-2022 VitaSmith
+  Copyright © 2019-2023 VitaSmith
   Copyright © 2018 Yuri Hime (shizukachan)
 
   This program is free software: you can redistribute it and/or modify
@@ -84,6 +84,7 @@ typedef struct {
 static char* master_key[][2] = {
     { "", "" },                                     // No master key
     { "A23", "dGGKXLHLuCJwv8aBc3YQX6X6sREVPchs" },  // A23 master key
+    { "A24", "fyrixtT9AhA4v0cFahgMcgVwxFrry42A" },  // A24 master key
 };
 const char* mk;
 
@@ -125,14 +126,16 @@ static uint8_t* string_to_key(const char* str, uint32_t key_size)
 
 uint32_t alphanum_score(const char* str, size_t len)
 {
-    uint32_t score = 0;
+    uint32_t score = 0, num_chars = 1;
     for (uint32_t i = 0; i < len; i++) {
         char c = str[i];
-        if (c == 0 || c == '.' ||  (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || c == '\\' || (c >= 'a' && c <= 'z'))
+        if (c == '.' || c == '_' || c == '-' || c == '\\' || (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
+            num_chars++;
             continue;
+        }
         score += (c > 0x7E) ? 0x1000 : 0x10;
     }
-    return score;
+    return score / num_chars;
 }
 
 // To handle either 32 or 64 bit PAK entries
@@ -156,7 +159,7 @@ int main_utf8(int argc, char** argv)
     bool list_only = (argc == 3) && (argv[1][0] == '-') && (argv[1][1] == 'l');
 
     if ((argc != 2) && !list_only) {
-        printf("%s %s (c) 2018-2022 Yuri Hime & VitaSmith\n\n"
+        printf("%s %s (c) 2018-2023 Yuri Hime & VitaSmith\n\n"
             "Usage: %s [-l] <Gust PAK file>\n\n"
             "Extracts (.pak) or recreates (.json) a Gust .pak archive.\n\n",
             _appname(argv[0]), GUST_TOOLS_VERSION_STR, _appname(argv[0]));
