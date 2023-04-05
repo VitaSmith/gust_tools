@@ -1,7 +1,7 @@
 @rem This test script performs unpack and repack of G1T textures and
 @rem validates that the data matches.
 @rem The latest texture test files can be downloaded from:
-@rem https://github.com/VitaSmith/test_g1t/archive/refs/tags/2022-09-06.zip
+@rem https://github.com/VitaSmith/test_g1t/archive/refs/tags/2023-04-05.zip
 @rem
 @echo off
 setlocal EnableDelayedExpansion
@@ -33,6 +33,7 @@ set list=^
   type_5c_win^
   type_5e_win^
   type_5e_win_2^
+  type_5f_sw^
   type_5f_win^
   type_5f_win_2^
   type_5f_win_3^

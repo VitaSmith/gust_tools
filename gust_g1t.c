@@ -1,6 +1,6 @@
 /*
   gust_g1t - DDS texture unpacker for Gust (Koei/Tecmo) .g1t files
-  Copyright © 2019-2022 VitaSmith
+  Copyright © 2019-2023 VitaSmith
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@
 #define G1T_FLAG_STANDARD_FLAGS 0x000000011200ULL // Flags that are commonly set
 #define G1T_FLAG_EXTENDED_DATA  0x000000000001ULL // Set if the texture has local data in the texture entry.
 #define G1T_FLAG_SRGB           0x000000002000ULL // Set if the texture uses sRGB
+#define G1T_FLAG_DOUBLE_HEIGHT  0x001000000000ULL // Some textures need to be doubled in height
 #define G1T_FLAG_NORMAL_MAP     0x030000000000ULL // Usually set for normal maps (but not always)
 #define G1T_FLAG_SURFACE_TEX    0x000000000001ULL // Set for textures that appear on a model's surface
 #define G1T_FLAG_TEXTURE_ARRAY  0x0000F00F0000ULL
@@ -177,6 +178,8 @@ static void json_to_flags(uint64_t* flags, JSON_Array* json_flags_array)
             flags[0] |= G1T_FLAG_SRGB;
         else if (strcmp(flag_str, "EXTENDED_DATA") == 0)
             flags[0] |= G1T_FLAG_EXTENDED_DATA;
+        else if (strcmp(flag_str, "DOUBLE_HEIGHT") == 0)
+            flags[0] |= G1T_FLAG_DOUBLE_HEIGHT;
         else if (strcmp(flag_str, "SURFACE_TEXTURE") == 0)
             flags[1] |= G1T_FLAG_SURFACE_TEX;
         // Unnamed flags
@@ -208,6 +211,7 @@ static JSON_Value* flags_to_json(uint64_t* flags)
     CHECK_MASK(flags_copy[0], G1T_FLAG_NORMAL_MAP, json_flags_array, "NORMAL_MAP");
     CHECK_MASK(flags_copy[0], G1T_FLAG_SRGB, json_flags_array, "SRGB_COLORSPACE");
     CHECK_MASK(flags_copy[0], G1T_FLAG_EXTENDED_DATA, json_flags_array, "EXTENDED_DATA");
+    CHECK_MASK(flags_copy[0], G1T_FLAG_DOUBLE_HEIGHT, json_flags_array, "DOUBLE_HEIGHT");
     CHECK_MASK(flags_copy[1], G1T_FLAG_SURFACE_TEX, json_flags_array, "SURFACE_TEXTURE");
     if (flags_copy[1] & G1T_FLAG_TEXTURE_ARRAY) {
         json_array_append_string(json_array(json_flags_array), "TEXTURE_ARRAY");
@@ -588,7 +592,7 @@ int main_utf8(int argc, char** argv)
     bool no_prompt = (argc == 3) && (argv[1][0] == '-') && (argv[1][1] == 'y');
 
     if ((argc != 2) && !list_only && !flip_image && !no_prompt) {
-        printf("%s %s (c) 2019-2022 VitaSmith\n\n"
+        printf("%s %s (c) 2019-2023 VitaSmith\n\n"
             "Usage: %s [-l] [-f] [-y] <file or directory>\n\n"
             "Extracts (file) or recreates (directory) a Gust .g1t texture archive.\n\n"
             "Note: A backup (.bak) of the original is automatically created, when the target\n"
@@ -759,7 +763,7 @@ int main_utf8(int argc, char** argv)
             }
             if (po2_sizes) {
                 tex.dx = (uint8_t)find_msb(dds_header->width);
-                tex.dy = (uint8_t)find_msb(dds_header->height);
+                tex.dy = (uint8_t)find_msb(dds_header->height / ((flags[0] & G1T_FLAG_DOUBLE_HEIGHT) ? 2 : 1));
             }
             if (data_endianness == big_endian) {
                 uint8_t swap_tmp = tex.dx;
@@ -789,7 +793,7 @@ int main_utf8(int argc, char** argv)
                 data[1] = getv32(*((uint32_t*)&depth));
                 setbe32(&data[2], (uint32_t)flags[1]);
                 data[3] = getv32(dds_header->width);
-                data[4] = getv32(dds_header->height);
+                data[4] = getv32(dds_header->height / ((flags[0] & G1T_FLAG_DOUBLE_HEIGHT) ? 2 : 1));
                 if (!is_power_of_2(dds_header->width) || !is_power_of_2(dds_header->height))
                     data_size = 5;
                 else
@@ -1174,6 +1178,8 @@ int main_utf8(int argc, char** argv)
             pos += sizeof(g1t_tex_header);
             uint32_t width = 1 << tex->dx;
             uint32_t height = 1 << tex->dy;
+            if (flags[0] & G1T_FLAG_DOUBLE_HEIGHT)
+                height *= 2;
             uint32_t data_size = (flags[0] & G1T_FLAG_EXTENDED_DATA) ? getp32(&buf[pos]) : 0;
             if (data_size != 0 && data_size != 0x0c && data_size != 0x10 && data_size != 0x14) {
                 fprintf(stderr, "ERROR: Extra flags size of 0x%x doesn't match our assertion\n", data_size);
@@ -1277,7 +1283,7 @@ int main_utf8(int argc, char** argv)
                     // A cubemap is composed of one texture for each face
                     flags[1] |= G1T_FLAG_CUBE_MAP;
                 } else {
-                    fprintf(stderr, "ERROR: Texture array with a factor of %d doesn't match our assertion\n",
+                    fprintf(stderr, "ERROR: Cube map with a factor of %d doesn't match our assertion\n",
                         texture_size / expected_texture_size);
                     fprintf(stderr, "Please report this error to %s.\n", REPORT_URL);
                     break;
