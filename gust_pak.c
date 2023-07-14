@@ -85,6 +85,7 @@ static char* master_key[][2] = {
     { "", "" },                                     // No master key
     { "A23", "dGGKXLHLuCJwv8aBc3YQX6X6sREVPchs" },  // A23 master key
     { "A24", "fyrixtT9AhA4v0cFahgMcgVwxFrry42A" },  // A24 master key
+    { "A25", "vh0WESTtbeBuTwWusr4EVusMi4TbLmjQ" },  // A25 master key
 };
 const char* mk;
 
