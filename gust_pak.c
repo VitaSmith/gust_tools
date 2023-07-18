@@ -87,7 +87,7 @@ static char* master_key[][2] = {
     { "A24", "fyrixtT9AhA4v0cFahgMcgVwxFrry42A" },  // A24 master key
     { "A25", "vh0WESTtbeBuTwWusr4EVusMi4TbLmjQ" },  // A25 master key
 };
-const char* mk;
+const char* mk = NULL;
 
 static __inline void decode(uint8_t* a, uint8_t* k, uint32_t size, uint32_t key_size)
 {
@@ -156,12 +156,21 @@ int main_utf8(int argc, char** argv)
     pak_header hdr = { 0 };
     void* entries = NULL;
     JSON_Value* json = NULL;
-    bool is_pak64 = false, is_a22 = false;
-    bool list_only = (argc == 3) && (argv[1][0] == '-') && (argv[1][1] == 'l');
+    bool is_pak64 = false, is_a22 = false, list_only = false, invalid_args = (argc < 2);
 
-    if ((argc != 2) && !list_only) {
+    for (int i = 1; i < argc - 1; i++) {
+        char* cur = argv[i];
+        if (strcmp(cur, "-l") == 0)
+            list_only = true;
+        else if (strcmp(cur, "-k") == 0 && i + 2 < argc)
+            mk = argv[++i];
+        else
+            invalid_args = true;
+    }
+
+    if (invalid_args) {
         printf("%s %s (c) 2018-2023 Yuri Hime & VitaSmith\n\n"
-            "Usage: %s [-l] <Gust PAK file>\n\n"
+            "Usage: %s [-l] [-k <GameKey>] <Gust PAK file>\n\n"
             "Extracts (.pak) or recreates (.json) a Gust .pak archive.\n\n",
             _appname(argv[0]), GUST_TOOLS_VERSION_STR, _appname(argv[0]));
         return 0;
@@ -189,9 +198,11 @@ int main_utf8(int argc, char** argv)
         hdr.version = json_object_get_uint32(json_object(json), "version");
         hdr.flags = json_object_get_uint32(json_object(json), "flags");
         hdr.nb_files = json_object_get_uint32(json_object(json), "nb_files");
-        mk = json_object_get_string(json_object(json), "master_key");
-        if (mk == NULL)
-            mk = master_key[0][1];
+        if (mk == NULL) {
+            mk = json_object_get_string(json_object(json), "master_key");
+            if (mk == NULL)
+                mk = master_key[0][1];
+        }
         is_pak64 = json_object_get_boolean(json_object(json), "64-bit");
         is_a22 = json_object_get_boolean(json_object(json), "a22-extensions");
         if (is_a22 && !is_pak64) {
@@ -324,43 +335,45 @@ int main_utf8(int argc, char** argv)
         is_a22 = is_pak64 && (min(sum[1], sum[2]) == sum[2]);
         printf("Detected %s PAK format\n", is_pak64 ? (is_a22 ? "A22/64-bit" : "A18/64-bit") : "A17/32-bit");
 
-        // Determine the master key that needs to be applied, if any
-        char filename[FILENAME_SIZE];
-        uint32_t weight[array_size(master_key)], best_score, best_weight, best_k, increment = 1;
-        memset(weight, 0, array_size(master_key) * sizeof(uint32_t));
-        // 128-255 entries should be enough for our detection
-        if (hdr.nb_files > 0x80)
-            increment = hdr.nb_files / (hdr.nb_files / 0x80);
-        for (uint32_t i = 0; i < hdr.nb_files; i += increment) {
-            bool skip_decode = (memcmp(zero_key, entry(i, key), CURRENT_KEY_SIZE) == 0);
-            if (!skip_decode) {
-                best_score = UINT32_MAX;
-                best_k = 0;
-                for (uint32_t k = 0; k < array_size(master_key); k++) {
-                    mk = master_key[k][1];
-                    memcpy(filename, entry(i, filename), FILENAME_SIZE);
-                    decode((uint8_t*)filename, entry(i, key), FILENAME_SIZE, CURRENT_KEY_SIZE);
-                    uint32_t score = alphanum_score(filename, strnlen(filename, 0x20));
-                    if (score < best_score) {
-                        best_score = score;
-                        best_k = k;
+        if (mk == NULL) {
+            // Determine the master key that needs to be applied, if any
+            char filename[FILENAME_SIZE];
+            uint32_t weight[array_size(master_key)], best_score, best_weight, best_k, increment = 1;
+            memset(weight, 0, array_size(master_key) * sizeof(uint32_t));
+            // 128-255 entries should be enough for our detection
+            if (hdr.nb_files > 0x80)
+                increment = hdr.nb_files / (hdr.nb_files / 0x80);
+            for (uint32_t i = 0; i < hdr.nb_files; i += increment) {
+                bool skip_decode = (memcmp(zero_key, entry(i, key), CURRENT_KEY_SIZE) == 0);
+                if (!skip_decode) {
+                    best_score = UINT32_MAX;
+                    best_k = 0;
+                    for (uint32_t k = 0; k < array_size(master_key); k++) {
+                        mk = master_key[k][1];
+                        memcpy(filename, entry(i, filename), FILENAME_SIZE);
+                        decode((uint8_t*)filename, entry(i, key), FILENAME_SIZE, CURRENT_KEY_SIZE);
+                        uint32_t score = alphanum_score(filename, strnlen(filename, 0x20));
+                        if (score < best_score) {
+                            best_score = score;
+                            best_k = k;
+                        }
                     }
+                    weight[best_k]++;
                 }
-                weight[best_k]++;
             }
-        }
-        best_k = 0;
-        best_weight = 0;
-        for (uint32_t k = 0; k < array_size(master_key); k++) {
-            if (weight[k] > best_weight) {
-                best_weight = weight[k];
-                best_k = k;
+            best_k = 0;
+            best_weight = 0;
+            for (uint32_t k = 0; k < array_size(master_key); k++) {
+                if (weight[k] > best_weight) {
+                    best_weight = weight[k];
+                    best_k = k;
+                }
             }
+            mk = master_key[best_k][1];
+            if (mk[0] != 0)
+                printf("Using %s master key\n", master_key[best_k][0]);
+            printf("\n");
         }
-        mk = master_key[best_k][1];
-        if (mk[0] != 0)
-            printf("Using %s master key\n", master_key[best_k][0]);
-        printf("\n");
 
         // Store the data we'll need to reconstruct the archive to a JSON file
         json = json_value_init_object();
