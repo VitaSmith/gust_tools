@@ -333,7 +333,9 @@ static size_t write_dds_header(FILE* fd, enum DDS_FORMAT format, uint32_t width,
         header.caps |= DDS_SURFACE_FLAGS_CUBEMAP;
         header.caps2 |= DDS_CUBEMAP_ALLFACES;
     }
-    if (flags[0] & G1T_FLAG_NORMAL_MAP)
+    // https://github.com/VitaSmith/gust_tools/issues/84
+    // Can't have DDS_NORMAL with RGBA textures
+    if ((flags[0] & G1T_FLAG_NORMAL_MAP) && !(header.ddspf.flags & DDS_RGBA))
         header.ddspf.flags |= DDS_NORMAL;
     size_t r = fwrite(&header, sizeof(DDS_HEADER), 1, fd);
     if (r != 1)
