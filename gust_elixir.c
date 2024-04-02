@@ -207,7 +207,7 @@ int main_utf8(int argc, char** argv)
 
         if (json_object_get_boolean(json_object(json), "compressed")) {
             printf("Compressing...\n");
-            compressor = calloc(1, sizeof(tdefl_compressor));
+            compressor = (tdefl_compressor*)calloc(1, sizeof(tdefl_compressor));
             if (compressor == NULL)
                 goto out;
             dst = fopen_utf8(filename, "wb");
@@ -216,8 +216,8 @@ int main_utf8(int argc, char** argv)
                 goto out;
             }
             fseek(file, 0, SEEK_SET);
-            buf = malloc(DEFAULT_CHUNK_SIZE);
-            zbuf = malloc(DEFAULT_CHUNK_SIZE);
+            buf = (uint8_t*)malloc(DEFAULT_CHUNK_SIZE);
+            zbuf = (uint8_t*)malloc(DEFAULT_CHUNK_SIZE);
             while (1) {
                 size_t written = DEFAULT_CHUNK_SIZE;
                 size_t read = fread(buf, 1, DEFAULT_CHUNK_SIZE, file);
@@ -285,7 +285,7 @@ int main_utf8(int argc, char** argv)
 
         if (gz_pos != NULL) {
             file_size *= 2;
-            buf = malloc(file_size);
+            buf = (uint8_t *)malloc(file_size);
             if (buf == NULL)
                 goto out;
             size_t pos = 0;
@@ -298,7 +298,7 @@ int main_utf8(int argc, char** argv)
                 }
                 if (zsize == 0)
                     break;
-                zbuf = malloc(zsize);
+                zbuf = (uint8_t*)malloc(zsize);
                 if (zbuf == NULL)
                     goto out;
                 if (fread(zbuf, 1, zsize, file) != zsize) {
@@ -310,7 +310,7 @@ increase_buf_size:
                 if ((s == -2) || (pos + DEFAULT_CHUNK_SIZE > file_size)) {
                     file_size *= 2;
                     uint8_t* old_buf = buf;
-                    buf = realloc(buf, file_size);
+                    buf = (uint8_t *)realloc(buf, file_size);
                     if (buf == NULL) {
                         fprintf(stderr, "ERROR: Can't increase buffer size\n");
                         buf = old_buf;
@@ -347,7 +347,7 @@ increase_buf_size:
                 goto out;
             }
         } else {
-            buf = malloc(file_size);
+            buf = (uint8_t*)malloc(file_size);
             if (buf == NULL)
                 goto out;
             if (fread(buf, 1, file_size, file) != file_size) {
@@ -398,7 +398,7 @@ increase_buf_size:
         for (uint32_t i = 0; i < hdr->nb_files; i++) {
             lxr_entry* entry = (lxr_entry*)&buf[sizeof(lxr_header) + (size_t)i * lxr_entry_size];
             assert(entry->offset + entry->size <= (uint32_t)file_size);
-            char* filename = calloc(0x20 + hdr->filename_size * 0x10 + 1, 1);
+            char* filename = (char*)calloc(0x20 + hdr->filename_size * 0x10 + 1, 1);
             if (filename == NULL)
                 goto out;
             memcpy(filename, entry->filename, 0x20 + hdr->filename_size * 0x10);

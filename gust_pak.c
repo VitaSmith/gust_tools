@@ -430,7 +430,7 @@ int main_utf8(int argc, char** argv)
                 goto out;
             }
             fseek64(file, entry(i, data_offset) + file_data_offset, SEEK_SET);
-            buf = malloc(entry(i, size));
+            buf = (uint8_t*)malloc(entry(i, size));
             if (buf == NULL) {
                 fprintf(stderr, "ERROR: Can't allocate entries\n");
                 goto out;
