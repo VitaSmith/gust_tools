@@ -3,20 +3,20 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LocalDebuggerWorkingDirectory>$(SolutionDir)</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArguments>-l -k vh0WESTtbeBuTwWusr4EVusMi4TbLmjQ PACK11_00.PAK</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>PACK00.json</LocalDebuggerCommandArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LocalDebuggerWorkingDirectory>$(SolutionDir)</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArguments>-l -k vh0WESTtbeBuTwWusr4EVusMi4TbLmjQ PACK11_00.PAK</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>PACK00.json</LocalDebuggerCommandArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LocalDebuggerCommandArguments>-l -k vh0WESTtbeBuTwWusr4EVusMi4TbLmjQ PACK11_00.PAK</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>PACK00.json</LocalDebuggerCommandArguments>
     <LocalDebuggerWorkingDirectory>$(SolutionDir)</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LocalDebuggerCommandArguments>-l -k vh0WESTtbeBuTwWusr4EVusMi4TbLmjQ PACK11_00.PAK</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>PACK00.json</LocalDebuggerCommandArguments>
     <LocalDebuggerWorkingDirectory>$(SolutionDir)</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>

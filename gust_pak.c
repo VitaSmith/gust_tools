@@ -1,6 +1,6 @@
 /*
   gust_pak - PAK archive unpacker for Gust (Koei/Tecmo) PC games
-  Copyright © 2019-2023 VitaSmith
+  Copyright © 2019-2025 VitaSmith
   Copyright © 2018 Yuri Hime (shizukachan)
 
   This program is free software: you can redistribute it and/or modify
@@ -86,6 +86,7 @@ static char* master_key[][2] = {
     { "A23", "dGGKXLHLuCJwv8aBc3YQX6X6sREVPchs" },  // A23 master key
     { "A24", "fyrixtT9AhA4v0cFahgMcgVwxFrry42A" },  // A24 master key
     { "A25", "vh0WESTtbeBuTwWusr4EVusMi4TbLmjQ" },  // A25 master key
+    { "A26", "xpFLmgBWJSFFgMFg3XUgs7B7AgYJhyFJ" },  // A26 master key
 };
 const char* mk = NULL;
 
@@ -130,7 +131,7 @@ uint32_t alphanum_score(const char* str, size_t len)
     uint32_t score = 0, num_chars = 1;
     for (uint32_t i = 0; i < len; i++) {
         char c = str[i];
-        if (c == '.' || c == '_' || c == '-' || c == '\\' || (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
+        if (c == '.' || c == '_' || c == '-' || c == '\\' || c == '/' || (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
             num_chars++;
             continue;
         }
@@ -169,7 +170,7 @@ int main_utf8(int argc, char** argv)
     }
 
     if (invalid_args) {
-        printf("%s %s (c) 2018-2023 Yuri Hime & VitaSmith\n\n"
+        printf("%s %s (c) 2018-2025 Yuri Hime & VitaSmith\n\n"
             "Usage: %s [-l] [-k <GameKey>] <Gust PAK file>\n\n"
             "Extracts (.pak) or recreates (.json) a Gust .pak archive.\n\n",
             _appname(argv[0]), GUST_TOOLS_VERSION_STR, _appname(argv[0]));
@@ -242,19 +243,18 @@ int main_utf8(int argc, char** argv)
             strncpy(entry(i, filename), filename, FILENAME_SIZE - 1);
             snprintf(path, sizeof(path), "%s%c%s", _dirname(argv[argc - 1]), PATH_SEP, filename);
             for (size_t n = 0; n < strlen(path); n++) {
-                if (path[n] == '\\')
+                if (path[n] == '\\' || path[n] == '/')
                     path[n] = PATH_SEP;
             }
             set_entry(i, size, read_file(path, &buf));
             if (entry(i, size) == UINT32_MAX)
                 goto out;
-            bool skip_encode = true;
-            for (int j = 0; j < CURRENT_KEY_SIZE; j++) {
+            bool encode_data = hdr.flags & 0x10;
+            for (int j = 0; encode_data == false && j < CURRENT_KEY_SIZE; j++) {
                 entry(i, key)[j] = key[j];
                 if (key[j] != 0)
-                    skip_encode = false;
+                    encode_data = true;
             }
-
             set_entry(i, data_offset, ftell64(file) - file_data_offset);
             uint64_t flags = json_object_get_uint64(file_entry, "flags");
             if (is_pak64)
@@ -264,8 +264,8 @@ int main_utf8(int argc, char** argv)
             if (is_a22)
                 setbe32(&(entries64_a22[i].extra), json_object_get_uint32(file_entry, "extra"));
             printf("%09" PRIx64 " %08x %s%c\n", entry(i, data_offset) + file_data_offset,
-                entry(i, size), entry(i, filename), skip_encode ? '*' : ' ');
-            if (!skip_encode) {
+                entry(i, size), entry(i, filename), encode_data ? ' ' : '*');
+            if (encode_data) {
                 decode((uint8_t*)entry(i, filename), entry(i, key), FILENAME_SIZE, CURRENT_KEY_SIZE);
                 decode(buf, entry(i, key), entry(i, size), CURRENT_KEY_SIZE);
             }
@@ -344,8 +344,8 @@ int main_utf8(int argc, char** argv)
             if (hdr.nb_files > 0x80)
                 increment = hdr.nb_files / (hdr.nb_files / 0x80);
             for (uint32_t i = 0; i < hdr.nb_files; i += increment) {
-                bool skip_decode = (memcmp(zero_key, entry(i, key), CURRENT_KEY_SIZE) == 0);
-                if (!skip_decode) {
+                bool decode_data = (hdr.flags & 0x10) || (memcmp(zero_key, entry(i, key), CURRENT_KEY_SIZE) != 0);
+                if (decode_data) {
                     best_score = UINT32_MAX;
                     best_k = 0;
                     for (uint32_t k = 0; k < array_size(master_key); k++) {
@@ -392,8 +392,8 @@ int main_utf8(int argc, char** argv)
         JSON_Value* json_files_array = json_value_init_array();
         printf("OFFSET    SIZE     NAME\n");
         for (uint32_t i = 0; i < hdr.nb_files; i++) {
-            bool skip_decode = (memcmp(zero_key, entry(i, key), CURRENT_KEY_SIZE) == 0);
-            if (!skip_decode) {
+            bool decode_data = (hdr.flags & 0x10) || (memcmp(zero_key, entry(i, key), CURRENT_KEY_SIZE) != 0);
+            if (decode_data) {
                 decode((uint8_t*)entry(i, filename), entry(i, key), FILENAME_SIZE, CURRENT_KEY_SIZE);
                 for (int j = 0; j < FILENAME_SIZE && entry(i, filename)[j] != 0; j++) {
                     char c = entry(i, filename)[j];
@@ -405,12 +405,8 @@ int main_utf8(int argc, char** argv)
                     }
                 }
             }
-            for (size_t n = 0; n < strlen(entry(i, filename)); n++) {
-                if (entry(i, filename)[n] == '\\')
-                    entry(i, filename)[n] = PATH_SEP;
-            }
             printf("%09" PRIx64 " %08x %s%c\n", entry(i, data_offset) + file_data_offset,
-                entry(i, size), entry(i, filename), skip_decode ? '*' : ' ');
+                entry(i, size), entry(i, filename), decode_data ? ' ' : '*');
             if (list_only)
                 continue;
             JSON_Value* json_file = json_value_init_object();
@@ -425,6 +421,10 @@ int main_utf8(int argc, char** argv)
 
             json_array_append_value(json_array(json_files_array), json_file);
             snprintf(path, sizeof(path), "%s%c%s", _dirname(argv[argc - 1]), PATH_SEP, entry(i, filename));
+            for (size_t n = 0; n < strlen(path); n++) {
+                if (path[n] == '\\' || path[n] == '/')
+                    path[n] = PATH_SEP;
+            }
             if (!create_path(_dirname(path))) {
                 fprintf(stderr, "ERROR: Can't create path '%s'\n", _dirname(path));
                 goto out;
@@ -439,7 +439,7 @@ int main_utf8(int argc, char** argv)
                 fprintf(stderr, "ERROR: Can't read archive\n");
                 goto out;
             }
-            if (!skip_decode)
+            if (decode_data)
                 decode(buf, entry(i, key), entry(i, size), CURRENT_KEY_SIZE);
             if (!write_file(buf, entry(i, size), path, false))
                 goto out;

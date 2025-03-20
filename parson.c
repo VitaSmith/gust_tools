@@ -77,7 +77,7 @@
 static JSON_Malloc_Function parson_malloc = malloc;
 static JSON_Free_Function parson_free = free;
 
-static int parson_escape_slashes = 1;
+static int parson_escape_slashes = 0;
 
 #define IS_CONT(b) (((unsigned char)(b) & 0xC0) == 0x80) /* is utf-8 continuation byte */
 

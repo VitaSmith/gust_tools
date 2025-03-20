@@ -15,7 +15,7 @@
      * Note: All of the seeds are prime numbers so if you have a number that is not prime, then it's not a seed.
      * If needed, you can access deobfuscated binary code (to use with IDA) by saving the WinDbg dump.
      *
-     * Note that Fairy Tail uses a slightly different scrambling set, which isn't documented here.
+     * Note that Fairy Tail and Atelier Yumia use a slightly different scrambling set, which isn't documented here.
      */
     "seeds": [
         {
@@ -145,6 +145,27 @@
             "fence": 0x0a31
         },
         {
+            "id": "ANP",
+            "name": "Ar nosurge Plus: Ode to an Unborn Star",
+            "version": 2,
+            "main": [
+                0x630d,
+                0xc9df,
+                0x72cb
+            ],
+            "table": [
+                0xabfb,
+                0xab89,
+                0x8c27
+            ],
+            "length": [
+                0x1d,
+                0x13,
+                0x0b
+            ],
+            "fence": 0x989
+        },
+        {
             "id": "ANW",
             "name": "Ateliers of the New World (Nelke & the Legendary Alchemists)",
             "version": 2,
@@ -207,7 +228,7 @@
             ],
             "fence": 0x0b23
         },
-        {
+        {   // Fairy Tail, Fairy Tail 2 and Atelier Yumia (A26)
             "id": "FT",
             "name": "Fairy Tail",
             "version": 3,

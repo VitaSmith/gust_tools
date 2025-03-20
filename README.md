@@ -8,9 +8,9 @@
 A set of commandline utilities designed to work with Gust (Koei/Tecmo) PC game assets such as the ones from
 [_Atelier series_](https://store.steampowered.com/search/?sort_by=Name_ASC&term=atelier&tags=122&category1=998),
 [_Nights of Azure series_](https://store.steampowered.com/search/?term=%22nights%20of%20azure%22&category1=998),
-[_Blue Reflection_](https://store.steampowered.com/app/658260/BLUE_REFLECTION__BLUE_REFLECTION/),
-[_Fairy Tail_](https://store.steampowered.com/app/1233260/FAIRY_TAIL/),
-[_Fatal Frame_](https://store.steampowered.com/app/1732190/FATAL_FRAME__PROJECT_ZERO_Maiden_of_Black_Water/) ...
+[_Blue Reflection_](https://store.steampowered.com/search/?term=%22blue%20reflection%22&category1=998),
+[_Fairy Tail_](https://store.steampowered.com/search/?term=%22fairy%20tail%22&category1=998),
+[_Fatal Frame_](https://store.steampowered.com/search/?term=%22fatal%20frame%22&category1=998) ...
 
 Utilities
 =========
@@ -26,7 +26,7 @@ Notes
 -----
 
 `gust_pak` is designed to replace both `A17_Decrypt` and `A18_Decrypt`, as it automatically detects "A17" (32-bit) and "A18" (64-bit) formats.
-It should therefore works with all of the Atelier PC ports (including _Atelier Sophie_) as well as _Blue Reflection_ archives.
+It should therefore works with all of the Atelier PC ports, _Fairy Tail_, as well as _Blue Reflection_ archives.
 
 `gust_enc` only works on the games where for which the scrambling seeds are known. See `gust_enc.json` for details.
 You can find a primer on the `.e` format, as well as what `gust_enc` does [here](https://gist.github.com/VitaSmith/ab384400bd992413ee0da401457abee1).
@@ -50,7 +50,7 @@ On Windows, you can just drop the file or directory you want to unpack/repack or
 Otherwise, you can invoke: `<gust_utility> <file or directory>`.
 
 When invoking `gust_enc`, you may specify the game ID to use for the encryption seeds (e.g. `-BR` for _Blue Reflection_,
-`-A17` for _Atelier Sophie_). If not specified, then the default ID from `gust_enc.json` is be used.
+`-FT` for _Fairy Tail_ or _Atelier Yumia_). If not specified, then the default ID from `gust_enc.json` is used.
 
 For recreating a `.pak`, you must pass the `.json` that was created during extraction to `gust_pak` rather than the directory.
 
