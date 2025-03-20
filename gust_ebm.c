@@ -97,7 +97,7 @@ int main_utf8(int argc, char** argv)
         uint32_t ebm_header[11];
         assert(array_size(ebm_header) >= 9 + duration1_length[array_size(duration1_length) - 1]);
         assert(array_size(ebm_header) >= duration2_length[array_size(duration2_length) - 1]);
-        for (size_t i = 0; i < abs(nb_messages); i++) {
+        for (size_t i = 0; i < (size_t)abs(nb_messages); i++) {
             JSON_Object* json_message = json_array_get_object(json_messages, i);
             memset(ebm_header, 0, sizeof(ebm_header));
             uint32_t j = 0;
@@ -159,7 +159,7 @@ int main_utf8(int argc, char** argv)
             for (d2 = 0; d2 < array_size(duration2_length); d2++) {
                 uint32_t* p = (uint32_t*)&buf[sizeof(uint32_t)];
                 bool good_candidate = true;
-                for (size_t i = 0; i < abs(nb_messages) && good_candidate; i++) {
+                for (size_t i = 0; i < (size_t)abs(nb_messages) && good_candidate; i++) {
                     uint32_t len = p[8 + duration1_length[d1]];
                     good_candidate = (len != 0 && len <= MAX_STRING_SIZE);
                     if (!good_candidate)
@@ -189,7 +189,7 @@ detected:
         json_object_set_number(json_object(json), "nb_messages", nb_messages & 0xffffffff);
         json_messages = json_value_init_array();
         uint32_t* ebm_header = (uint32_t*)&buf[sizeof(uint32_t)];
-        for (size_t i = 0; i < abs(nb_messages); i++) {
+        for (size_t i = 0; i < (size_t)abs(nb_messages); i++) {
             uint32_t j = 0;
             json_message = json_value_init_object();
             json_object_set_number(json_object(json_message), "type", (double)ebm_header[j]);

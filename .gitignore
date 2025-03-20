@@ -58,3 +58,17 @@
 *.zip
 x86
 x64
+
+# ignore output files
+gust_ebm
+gust_elixir
+gust_enc
+gust_g1t
+gust_gmpk
+gust_pak
+gust_ebm.exe
+gust_elixir.exe
+gust_enc.exe
+gust_g1t.exe
+gust_gmpk.exe
+gust_pak.exe

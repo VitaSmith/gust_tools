@@ -49,7 +49,7 @@ bool create_path(char* path)
         if (pos > 0) {
             // Create parent dirs
             path[pos] = 0;
-            char* new_path = malloc(strlen(path) + 1);
+            char* new_path = (char*)malloc(strlen(path) + 1);
             if (new_path == NULL) {
                 fprintf(stderr, "ERROR: Can't allocate path\n");
                 return false;
@@ -182,7 +182,7 @@ uint32_t read_file_max(const char* path, uint8_t** buf, uint32_t max_size)
     if (max_size != 0)
         size = min(size, max_size);
 
-    *buf = calloc(size, 1);
+    *buf = (uint8_t*)calloc(size, 1);
     if (*buf == NULL) {
         size = UINT32_MAX;
         goto out;
@@ -218,7 +218,7 @@ void create_backup(const char* path)
 {
     struct stat64_t st;
     if (stat64_utf8(path, &st) == 0) {
-        char* backup_path = malloc(strlen(path) + 5);
+        char* backup_path = (char*)malloc(strlen(path) + 5);
         if (backup_path == NULL)
             return;
         strcpy(backup_path, path);
