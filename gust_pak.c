@@ -83,10 +83,12 @@ typedef struct {
 //
 static char* master_key[][2] = {
     { "", "" },                                     // No master key
-    { "A23", "dGGKXLHLuCJwv8aBc3YQX6X6sREVPchs" },  // A23 master key
-    { "A24", "fyrixtT9AhA4v0cFahgMcgVwxFrry42A" },  // A24 master key
-    { "A25", "vh0WESTtbeBuTwWusr4EVusMi4TbLmjQ" },  // A25 master key
-    { "A26", "xpFLmgBWJSFFgMFg3XUgs7B7AgYJhyFJ" },  // A26 master key
+    { "A23", "dGGKXLHLuCJwv8aBc3YQX6X6sREVPchs" },  // A23 master key (Sophie 2)
+    { "A24", "fyrixtT9AhA4v0cFahgMcgVwxFrry42A" },  // A24/A29 master key (Ryza 3/DX)
+    { "A25", "vh0WESTtbeBuTwWusr4EVusMi4TbLmjQ" },  // A25 master key (Yumia)
+    { "A26", "xpFLmgBWJSFFgMFg3XUgs7B7AgYJhyFJ" },  // A26 master key (Resleriana)
+    { "A27", "EGkUyYzPidcRx5yTecqk5AYJeSzzc5BR" },  // A27 master key (Ryza 1 DX)
+    { "A28", "ivZBFzn82RVuYnmgXfeFEgk33ALZcZDP" },  // A28 master key (Ryza 2 DX)
 };
 const char* mk = NULL;
 
@@ -401,6 +403,8 @@ int main_utf8(int argc, char** argv)
                         break;
                     if (c < 0x20 || c > 0x7e) {
                         fprintf(stderr, "ERROR: Failed to decode filename for entry %d\n", i);
+                        if (i == 0)
+                            fprintf(stderr, "This is most likely because this game needs a new key.\n");
                         goto out;
                     }
                 }
