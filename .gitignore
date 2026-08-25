@@ -60,6 +60,8 @@ x86
 x64
 
 # ignore output files
+/bin/
+/obj/
 gust_ebm
 gust_elixir
 gust_enc

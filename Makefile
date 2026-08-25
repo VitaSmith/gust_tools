@@ -1,85 +1,130 @@
-ifeq ($(OS),Windows_NT)
-  EXE := .exe
-else
-  EXE :=
+# Toolchain
+# Use GCC by default when no compiler was explicitly provided
+# Override it with: make CC=clang
+ifeq ($(origin CC),default)
+	CC := gcc
 endif
 
-# Yeah, there's probably a better way than this -- I'll gladly accept a pull request, thank you!
-BIN1=gust_pak
-SRC1=${BIN1}.c util.c parson.c
-OBJ1=${SRC1:.c=.o}
-DEP1=${SRC1:.c=.d}
+# Output directories
+BIN_DIR := bin
+OBJ_DIR := obj
 
-BIN2=gust_elixir
-SRC2=${BIN2}.c util.c parson.c miniz_tinfl.c miniz_tdef.c
-OBJ2=${SRC2:.c=.o}
-DEP2=${SRC2:.c=.d}
-
-BIN3=gust_g1t
-SRC3=${BIN3}.c util.c parson.c
-OBJ3=${SRC3:.c=.o}
-DEP3=${SRC3:.c=.d}
-
-BIN4=gust_enc
-SRC4=${BIN4}.c util.c parson.c
-OBJ4=${SRC4:.c=.o}
-DEP4=${SRC4:.c=.d}
-
-BIN5=gust_ebm
-SRC5=${BIN5}.c util.c parson.c
-OBJ5=${SRC5:.c=.o}
-DEP5=${SRC5:.c=.d}
-
-BIN6=gust_gmpk
-SRC6=${BIN6}.c util.c parson.c
-OBJ6=${SRC6:.c=.o}
-DEP6=${SRC6:.c=.d}
-
-BIN=${BIN1}${EXE} ${BIN2}${EXE} ${BIN3}${EXE} ${BIN4}${EXE} ${BIN5}${EXE} ${BIN6}${EXE}
-OBJ=${OBJ1} ${OBJ2} ${OBJ3} ${OBJ4} ${OBJ5} ${OBJ6}
-DEP=${DEP1} ${DEP2} ${DEP3} ${DEP4} ${DEP5} ${DEP6}
-
-# -Wno-sequence-point because *dst++ = dst[-d]; is only ambiguous for people who don't know how CPUs work.
-CFLAGS=-std=c99 -pipe -fvisibility=hidden -Wall -Wextra -Werror -Wno-sequence-point -Wno-unknown-pragmas -Wno-strict-aliasing -UNDEBUG -D_GNU_SOURCE -O2
+# Platform
 ifeq ($(OS),Windows_NT)
-LDFLAGS=-s -municode
+	EXE := .exe
+
+	# Use the native Windows shell
+	SHELL := cmd.exe
+	.SHELLFLAGS := /C
+
+	# Convert forward slashes to backslashes
+	path = $(subst /,\,$(1))
+
+	MKDIR = if not exist "$(call path,$(1))" mkdir "$(call path,$(1))"
+	COPY  = copy /Y "$(call path,$(1))" "$(call path,$(2))" >NUL
+	RMDIR = if exist "$(call path,$(1))" rmdir /S /Q "$(call path,$(1))"
 else
-LDFLAGS=-s -lm
+	EXE :=
+
+	MKDIR = mkdir -p "$(1)"
+	COPY  = cp -f "$(1)" "$(2)"
+	RMDIR = rm -rf "$(1)"
 endif
 
-.PHONY: all clean
+# Target executables
+EXECUTABLES := \
+	gust_pak \
+	gust_elixir \
+	gust_g1t \
+	gust_enc \
+	gust_ebm \
+	gust_gmpk
 
-all: ${BIN}
+# Sources
+COMMON_SRC := util.c parson.c
 
-clean:
-	@${RM} ${BIN} ${OBJ} ${DEP}
+gust_pak_SRC    := gust_pak.c    $(COMMON_SRC)
+gust_elixir_SRC := gust_elixir.c $(COMMON_SRC) miniz_tinfl.c miniz_tdef.c
+gust_g1t_SRC    := gust_g1t.c    $(COMMON_SRC)
+gust_enc_SRC    := gust_enc.c    $(COMMON_SRC)
+gust_ebm_SRC    := gust_ebm.c    $(COMMON_SRC)
+gust_gmpk_SRC   := gust_gmpk.c   $(COMMON_SRC)
 
-${BIN1}${EXE}: ${OBJ1}
-	@echo [L] $@
-	@${CC} -o $@ $^ ${LDFLAGS}
+# Generated files
+TARGETS := $(addprefix $(BIN_DIR)/,$(addsuffix $(EXE),$(EXECUTABLES)))
+ALL_SRC := $(sort $(foreach program,$(EXECUTABLES),$($(program)_SRC)))
+ALL_OBJ := $(patsubst %.c,$(OBJ_DIR)/%.o,$(ALL_SRC))
+ALL_DEP := $(ALL_OBJ:.o=.d)
+GUST_ENC_JSON_SRC := gust_enc.json
+GUST_ENC_JSON_DST := $(BIN_DIR)/gust_enc.json
 
-${BIN2}${EXE}: ${OBJ2}
-	@echo [L] $@
-	@${CC} -o $@ $^ ${LDFLAGS} 
+# Compiler and linker flags
+CPPFLAGS += \
+	-UNDEBUG \
+	-D_GNU_SOURCE
 
-${BIN3}${EXE}: ${OBJ3}
-	@echo [L] $@
-	@${CC} -o $@ $^ ${LDFLAGS}
+CFLAGS += \
+	-std=c99 \
+	-pipe \
+	-fvisibility=hidden \
+	-Wall \
+	-Wextra \
+	-Werror \
+	-Wno-sequence-point \
+	-Wno-unknown-pragmas \
+	-Wno-strict-aliasing \
+	-O2
 
-${BIN4}${EXE}: ${OBJ4}
-	@echo [L] $@
-	@${CC} -o $@ $^ ${LDFLAGS}
+LDFLAGS += -s
 
-${BIN5}${EXE}: ${OBJ5}
-	@echo [L] $@
-	@${CC} -o $@ $^ ${LDFLAGS}
+ifeq ($(OS),Windows_NT)
+	LDFLAGS += -municode
+else
+	LDLIBS += -lm
+endif
 
-${BIN6}${EXE}: ${OBJ6}
-	@echo [L] $@
-	@${CC} -o $@ $^ ${LDFLAGS}
+# Main targets
+.PHONY: all clean rebuild
 
-%.o: %.c
+all: $(TARGETS) $(GUST_ENC_JSON_DST)
+
+rebuild:
+	@$(MAKE) clean
+	@$(MAKE) all
+
+# Linking
+define LINK_PROGRAM
+
+$(BIN_DIR)/$(1)$(EXE): $$(patsubst %.c,$$(OBJ_DIR)/%.o,$$($(1)_SRC)) | $(BIN_DIR)
+	@echo [L] $$@
+	@$$(CC) $$(LDFLAGS) -o $$@ $$^ $$(LDLIBS)
+
+endef
+
+$(foreach program,$(EXECUTABLES),$(eval $(call LINK_PROGRAM,$(program))))
+
+# Compilation
+$(OBJ_DIR)/%.o: %.c | $(OBJ_DIR)
 	@echo [C] $<
-	@${CC} ${CFLAGS} -MMD -c -o $@ $<
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c -o $@ $<
 
--include ${DEP}
+# Copy gust_enc.json
+$(GUST_ENC_JSON_DST): $(GUST_ENC_JSON_SRC) | $(BIN_DIR)
+	@echo [COPY] $<
+	@$(call COPY,$<,$@)
+
+# Create directories
+$(BIN_DIR):
+	@$(call MKDIR,$@)
+
+$(OBJ_DIR):
+	@$(call MKDIR,$@)
+
+# Cleanup
+clean:
+	@echo [CLEAN]
+	@$(call RMDIR,$(BIN_DIR))
+	@$(call RMDIR,$(OBJ_DIR))
+
+# Include all header dependencies
+-include $(ALL_DEP)

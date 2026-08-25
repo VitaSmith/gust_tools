@@ -789,13 +789,12 @@ static bool check_for_prime(uint32_t n)
 
 static void compute_prime_list(uint32_t max_value)
 {
-    uint32_t i, cnt = 2;
+    uint32_t i;
 
     prime_list = calloc((max_value + 7) / 8, 1);
     for (i = 2; i <= max_value; i++) {
         if (check_for_prime(i)) {
             set_prime(i);
-            cnt++;
         }
     }
     set_prime(0);
